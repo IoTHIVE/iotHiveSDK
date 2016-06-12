@@ -140,7 +140,7 @@ ifeq ($(BOARD_SUPPORTS_BSL),1)
 ifeq ($(wildcard $(BSL)), )
 	@echo "ERROR: Could not find the cc2538-bsl script. Did you run 'git submodule update --init' ?"
 else
-	$(PYTHON) $(BSL) $(BSL_FLAGS) $<
+	@sudo $(PYTHON) $(BSL) $(BSL_FLAGS) $<
 endif
 else
 %.upload:
