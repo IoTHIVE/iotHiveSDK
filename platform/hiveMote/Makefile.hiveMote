@@ -1,0 +1,58 @@
+# hiveMote platform makefile
+
+ifndef CONTIKI
+  $(error CONTIKI not defined! You must specify where CONTIKI resides!)
+endif
+
+### Board and BSP selection
+ifeq ($(CPU_FAMILY),)
+  $(error CPU_FAMILY not defined! You must specify what CPU_FAMILY are you using!)
+endif
+
+### Include Directories
+CONTIKI_TARGET_DIRS += .
+
+ifeq ($(WITH_ENC28J60),1)
+CONTIKI_TARGET_DIRS += enc28j60
+endif
+
+### Include Source Files
+CONTIKI_TARGET_SOURCEFILES += contiki-main.c
+CONTIKI_TARGET_SOURCEFILES += sensors.c leds.c
+CONTIKI_TARGET_SOURCEFILES += leds-arch.c srf06-sensors.c button-sensor.c board.c
+CONTIKI_TARGET_SOURCEFILES += board-i2c.c sensor-common.c sd-card.c
+CONTIKI_TARGET_SOURCEFILES += board-spi.c
+
+ifeq ($(WITH_ADXL345),1)
+CONTIKI_TARGET_SOURCEFILES += adxl345.c
+endif
+
+ifeq ($(WITH_ENC28J60),1)
+CONTIKI_TARGET_SOURCEFILES += enc28j60-arch.c stats.c
+endif
+
+CONTIKI_SOURCEFILES += $(CONTIKI_TARGET_SOURCEFILES)
+
+CLEAN += *.hiveMote
+
+### Unless the example dictates otherwise, build with code size optimisations
+ifndef SMALL
+  SMALL = 0
+endif
+
+### Support for NAT64 edge router
+ifeq ($(CONTIKI_WITH_IP64),1)
+    CFLAGS += -DCONTIKI_WITH_IP64=1
+    MODULES += core/net/ip64
+endif
+
+### BSL Support
+BOARD_SUPPORTS_BSL=1
+
+### Define the CPU directory and pull in the correct CPU makefile. This will
+### be defined by one of the makefiles included above and it can be either
+### Makefile.cc26xx or Makefile.cc13xx
+CONTIKI_CPU=$(CONTIKI)/cpu/cc26xx-cc13xx
+include $(CONTIKI_CPU)/Makefile.$(CPU_FAMILY)
+
+MODULES += core/net core/net/mac core/net/mac/contikimac core/net/llsec
