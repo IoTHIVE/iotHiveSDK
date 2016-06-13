@@ -43,8 +43,8 @@
  * @{
  *
  * \file
- * Header file with definitions related to the I/O connections on the TI
- * SmartRF06 Evaluation Board with a CC26xxEM
+ * Header file with definitions related to the I/O connections on the
+ * IoTHive hiveMote board version 1.3
  *
  * \note   Do not include this file directly. It gets included by contiki-conf
  *         after all relevant directives have been set.
@@ -54,6 +54,7 @@
 #define BOARD_H_
 /*---------------------------------------------------------------------------*/
 #include "ioc.h"
+#include "arduino-mapping.h"
 /*---------------------------------------------------------------------------*/
 /**
  * \name LED configurations
@@ -143,8 +144,8 @@
  * Those values are not meant to be modified by the user
  * @{
  */
-#define BOARD_IOID_SDA            	IOID_29 /**< Interface 0 SDA: All sensors bar MPU */
-#define BOARD_IOID_SCL            	IOID_30 /**< Interface 0 SCL: All sensors bar MPU */
+#define BOARD_IOID_SDA            	MOD_DIO_SDA /**< Interface 0 SDA: All sensors bar MPU */
+#define BOARD_IOID_SCL            	MOD_DIO_SCL /**< Interface 0 SCL: All sensors bar MPU */
 // #define BOARD_IOID_SDA_HP         IOID_8 /**< Interface 1 SDA: MPU */
 // #define BOARD_IOID_SCL_HP         IOID_9 /**< Interface 1 SCL: MPU */
 /** @} */
@@ -196,6 +197,25 @@
 	                                 IOC_HYST_DISABLE | IOC_FALLING_EDGE  | \
 	                                 IOC_INT_ENABLE   | IOC_IOMODE_NORMAL | \
 	                                 IOC_NO_WAKE_UP   | IOC_INPUT_ENABLE)
+/** @} */
+/*---------------------------------------------------------------------------*/
+/**
+ * \name Arduino shield mappings
+ * @{
+ */
+#if SEEED_RELAY_BOARD_V2==1
+#define RELAY_1_IOID 				MOD_DIO_7
+#define RELAY_2_IOID 				MOD_DIO_6
+#define RELAY_3_IOID 				MOD_DIO_5
+#define RELAY_4_IOID 				MOD_DIO_4
+#elif SEEED_MOTOR_BOARD_V2==1
+#define CHANNEL_0_ENABLE			MOD_DIO_9
+#define CHANNEL_0_OUT1				MOD_DIO_8	/* OUT1 */
+#define CHANNEL_0_OUT2				MOD_DIO_11	/* OUT2 */
+#define CHANNEL_1_ENABLE			MOD_DIO_10
+#define CHANNEL_1_OUT1				MOD_DIO_12	/* OUT3 */
+#define CHANNEL_1_OUT2				MOD_DIO_13	/* OUT4 */
+#endif
 /** @} */
 /*---------------------------------------------------------------------------*/
 /**
