@@ -53,6 +53,12 @@ BOARD_SUPPORTS_BSL=1
 ### be defined by one of the makefiles included above and it can be either
 ### Makefile.cc26xx or Makefile.cc13xx
 CONTIKI_CPU=$(CONTIKI)/cpu/cc26xx-cc13xx
+CFLAGS += -D$(CPU_FAMILY)=1
 include $(CONTIKI_CPU)/Makefile.$(CPU_FAMILY)
+
+### SHIELD COMPILER FLAGS
+ifneq ($(SHIELD),)
+	CFLAGS += -D$(SHIELD)=1
+endif
 
 MODULES += core/net core/net/mac core/net/mac/contikimac core/net/llsec
