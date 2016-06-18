@@ -53,6 +53,13 @@ In terms of hardware support, the following drivers have been implemented:
   * Buzzer
   * External SPI flash
 
+Arduino Shields Supported
+=========================
+* Actuator
+  * Seeed Relay Shield (ver 2.0)
+  * Seeed Motor Shield (ver 2.0)
+* Sensor
+
 Requirements
 ============
 To use the port you need:
