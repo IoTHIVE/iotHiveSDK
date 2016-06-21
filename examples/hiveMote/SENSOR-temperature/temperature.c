@@ -1,12 +1,15 @@
 /*
- *	Blinky Application
+ *	Description: Temperature Sensor Application
+ *  Sensor Used: LM35 Analog Temperature Sensor
+ *
  */
 
 #include "contiki.h"
 #include "dev/leds.h"
 #include "ti-lib.h"
-#include "driverlib/aon_batmon.h"
-#include "aon_batmon.h"
+#include "adc-sensor.h"
+/*---------------------------------------------------------------------------*/
+#define ADC_FIXED_REF_VOLATGE   4300000 /* 4.3 V == 4300000 uV */
 /*---------------------------------------------------------------------------*/
 #define DEBUG 1
 #if DEBUG
@@ -26,21 +29,24 @@ AUTOSTART_PROCESSES(&temp_sense_process);
 PROCESS_THREAD(temp_sense_process, ev, data)
 {
 	static struct etimer et;
+    uint8_t intVal = 0, fracVal = 0;
 
 	PROCESS_BEGIN();
 
-    ti_lib_aon_batmon_enable();
+    SENSORS_ACTIVATE(adc_sensor);
+    adc_sensor.configure(ADC_SENSOR_SET_CHANNEL, ADC_COMPB_IN_AUXIO7);
 
 	PRINTF("Temperature Sensor Process started...\r\n");
 
     etimer_set(&et, CLOCK_SECOND);
 
-	PROCESS_PAUSE();
     while(1) {
     	PROCESS_YIELD();
     	if(etimer_expired(&et)) {
+            intVal = ti_lib_aux_adc_value_to_microvolts(ADC_FIXED_REF_VOLATGE, adc_sensor.value(ADC_SENSOR_VALUE))/10000;
+            fracVal = adc_sensor.value(ADC_SENSOR_VALUE) - intVal * 10000;
+            PRINTF("Temperature: %d.%d\r\n", intVal, fracVal);
             etimer_reset(&et);
-    		PRINTF("Temperature in Deg C: %d\r\n", ti_lib_aon_batmon_temperature_get_deg_c());
     	}
     }
   PROCESS_END();
