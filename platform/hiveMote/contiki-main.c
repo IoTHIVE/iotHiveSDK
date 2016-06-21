@@ -214,7 +214,7 @@ main(void)
 
   autostart_start(autostart_processes);
 
-#if !(HAS_ENC28J60 || WITH_ADXL345)
+#if !(HAS_ENC28J60 || HAS_ADXL345)
   watchdog_start();
 #endif
   fade(LEDS_GREEN);
@@ -223,12 +223,12 @@ main(void)
     uint8_t r;
     do {
       r = process_run();
-#if !(HAS_ENC28J60 || WITH_ADXL345)
+#if !(HAS_ENC28J60 || HAS_ADXL345)
       watchdog_periodic();
 #endif
     } while(r > 0);
 
-#if !(HAS_ENC28J60 || WITH_ADXL345)
+#if !(HAS_ENC28J60 || HAS_ADXL345)
     /* Drop to some low power mode */
     lpm_drop();
 #endif
