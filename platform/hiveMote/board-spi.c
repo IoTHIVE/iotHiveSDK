@@ -114,7 +114,7 @@ board_spi_flush(uint8_t spi)
 }
 /*---------------------------------------------------------------------------*/
 void
-board_spi_open(uint8_t spi, uint32_t bit_rate)
+board_spi_open(uint8_t spi, uint32_t bit_rate, uint32_t spi_mode)
 {
   uint32_t buf;
 
@@ -134,7 +134,7 @@ board_spi_open(uint8_t spi, uint32_t bit_rate)
   ti_lib_ssi_int_disable(regs->base, SSI_RXOR | SSI_RXFF | SSI_RXTO | SSI_TXFF);
   ti_lib_ssi_int_clear(regs->base, SSI_RXOR | SSI_RXTO);
   ti_lib_rom_ssi_config_set_exp_clk(regs->base, ti_lib_sys_ctrl_clock_get(),
-                                    SSI_FRF_MOTO_MODE_0,
+                                    spi_mode,
                                     SSI_MODE_MASTER, bit_rate, 8);
   ti_lib_rom_ioc_pin_type_ssi_master(regs->base, regs->miso_ioid, regs->mosi_ioid, IOID_UNUSED, regs->clk_ioid);
   ti_lib_ssi_enable(regs->base);

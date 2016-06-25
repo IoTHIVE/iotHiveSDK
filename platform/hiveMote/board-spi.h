@@ -106,7 +106,7 @@ static const spi_regs_t spi_regs[SSI_INSTANCE_COUNT] = {
  * board_spi_flush() must be preceded by a call to this function. It is
  * recommended to call board_spi_close() after such chain of calls.
  */
-void board_spi_open(uint8_t spi, uint32_t bit_rate);
+void board_spi_open(uint8_t spi, uint32_t bit_rate, uint32_t spi_mode);
 /*---------------------------------------------------------------------------*/
 /**
  * \brief Close the SPI interface

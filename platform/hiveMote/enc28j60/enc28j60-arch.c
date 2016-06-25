@@ -64,7 +64,7 @@ enc28j60_arch_spi_init(void)
   ti_lib_ioc_pin_type_gpio_input(BOARD_IOID_ENC28J60_INT);
   
   /* Set up SPI */
-  board_spi_open(ENC28J60_SPI_INSTANCE, ENC28J60_BIT_RATE);
+  board_spi_open(ENC28J60_SPI_INSTANCE, ENC28J60_BIT_RATE, SSI_FRF_MOTO_MODE_0);
 }
 /*---------------------------------------------------------------------------*/
 void 

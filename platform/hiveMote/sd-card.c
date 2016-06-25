@@ -155,7 +155,7 @@ sdCardInit(void)
     ti_lib_ioc_pin_type_gpio_input(BOARD_IOID_SDCARD_CD);
 
     /* Set up SPI */
-    board_spi_open(SDCARD_SPI_INSTANCE, SDCARD_SPI_INIT_FREQ);
+    board_spi_open(SDCARD_SPI_INSTANCE, SDCARD_SPI_INIT_FREQ, SSI_FRF_MOTO_MODE_0);
 
     if(IS_SDCARD_PRESENT())
     {
