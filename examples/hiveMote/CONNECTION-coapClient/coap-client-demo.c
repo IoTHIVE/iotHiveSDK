@@ -45,7 +45,15 @@
 #include "ip64-addr.h"
 #include "dev/leds.h"
 
+#ifdef  HAS_ADXL345
 #include "adxl345.h"
+#endif
+
+#ifdef  HAS_LM35
+#include "ti-lib.h"
+#include "adc-sensor.h"
+#define   ADC_FIXED_REF_VOLATGE   4300000 /* 4.3 V == 4300000 uV */
+#endif
 /*---------------------------------------------------------------------------*/
 #define DEBUG 1
 #if DEBUG
@@ -69,11 +77,13 @@ uip_ip4addr_t server_ip4addr;
 uip_ip6addr_t server_ip6addr;
 uint8_t flag = 0;
 /*---------------------------------------------------------------------------*/
-/* Example URIs that can be queried. */
 #define NUMBER_OF_URLS 3
-/* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
-char *service_urls[NUMBER_OF_URLS] =
-{ ".well-known/core", "/test", "/" };
+
+/* /token/deviceId/<SENS/ACT>/<sensorId/actuatorId> */
+char *service_urls[NUMBER_OF_URLS] = {  ".well-known/core", 
+                                        "/c4daee07/200000/SENS/0", /* Accelerometer */
+                                        "/c4daee07/200001/SENS/1", /* Temperature */
+                                      };
 /*---------------------------------------------------------------------------*/
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
 void client_chunk_handler(void *response){
@@ -90,12 +100,12 @@ route_callback(int event, uip_ipaddr_t *route, uip_ipaddr_t *ipaddr, int numrout
 {
   if(event == UIP_DS6_NOTIFICATION_DEFRT_ADD) 
   {
-      leds_on(LEDS_GREEN);
-      if(flag == 0)
-      {
-        process_poll(&er_example_client);
-        flag=1;
-      }
+    leds_on(LEDS_GREEN);
+    if(flag == 0)
+    {
+      process_poll(&er_example_client);
+      flag=1;
+    }
   }
   else if(event == UIP_DS6_NOTIFICATION_DEFRT_RM)
   {
@@ -108,7 +118,6 @@ PROCESS_THREAD(er_example_client, ev, data)
 
   static struct etimer et;
   static coap_packet_t request[1];
-  int16_t x, y, z;
 	static struct uip_ds6_notification n;
   PROCESS_BEGIN();
   uip_ds6_notification_add(&n, route_callback);
@@ -117,39 +126,70 @@ PROCESS_THREAD(er_example_client, ev, data)
   ip64_addr_4to6(&server_ip4addr, &server_ip6addr);
 
   coap_init_engine();
-  accm_init();
 
-  PRINTF("CoAP Accelerometer Demo Started.\r\n");
+#ifdef  HAS_ADXL345
+  accm_init();
+#endif
+
+#ifdef  HAS_LM35
+  SENSORS_ACTIVATE(adc_sensor);
+  adc_sensor.configure(ADC_SENSOR_SET_CHANNEL, ADC_COMPB_IN_AUXIO7);
+#endif
+
+  PRINTF("CoAP Sensor and Actuator Demo Started.\r\n");
 
   while(1) {
     PROCESS_YIELD();
 
     if(ev == PROCESS_EVENT_POLL)
     {
-    	etimer_set(&et, 5 * CLOCK_SECOND);
+    	etimer_set(&et, 2 * CLOCK_SECOND);
     }
     else if(etimer_expired(&et))
     {
-
-    	PRINTF("Sending Data...\r\n");
+#ifdef  HAS_ADXL345
+    	PRINTF("Sending Accelerometer Data...\r\n");
+      leds_on(LEDS_RED);
       coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-      coap_set_header_uri_path(request, service_urls[2]);
-      coap_set_header_content_format(request, APPLICATION_JSON);
+      coap_set_header_uri_path(request, "/c4daee07/200000/SENS/0");
+      coap_set_header_content_format(request, TEXT_PLAIN);
 
-      char msg[150];
+      char msg1[15];
+      memset(msg1, 0, 15);
+      int16_t x, y, z;
+      uint8_t xValStrLen,yValStrLen,zValStrLen;
+      char xValStr[4], yValStr[4], zValStr[4];
       x = accm_read_axis(X_AXIS);
       y = accm_read_axis(Y_AXIS);
       z = accm_read_axis(Z_AXIS);
-      // printf("x: %d y: %d z: %d\n\r", x, y, z);
+      PRINTF("x:%d,y:%d,z:%d\n\r", x, y, z);
 
-      snprintf(msg, 150, "{\"data\":[{\"payload\":{\"x\":%d,\"y\":%d,\"z\":%d},\"device_id\":\"000001\",\"sensor_id\":\"0\",\"company_id\":\"0001\"}],\"token\":\"c4daee07\"}", x, y, z);
-
-      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
-
+      snprintf(msg1, 15, "%d,%d,%d:", x, y, z);
+      coap_set_payload(request, (uint8_t *)msg1, sizeof(msg1) - 1);
       COAP_BLOCKING_REQUEST(&server_ip6addr, REMOTE_PORT, request, client_chunk_handler);
+      leds_off(LEDS_RED);
+      PRINTF("Done!!!\n\r");
+#endif
 
-      PRINTF("\n--Done--\n");
+#ifdef  HAS_LM35
+      PRINTF("Sending Temperature Data...\r\n");
+      leds_on(LEDS_RED);
+      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+      coap_set_header_uri_path(request, service_urls[2]);
+      coap_set_header_content_format(request, TEXT_PLAIN);
 
+      char msg2[5];
+      memset(msg2, 0, 5);
+      uint8_t intVal = 0, fracVal = 0;
+      intVal = ti_lib_aux_adc_value_to_microvolts(ADC_FIXED_REF_VOLATGE, adc_sensor.value(ADC_SENSOR_VALUE))/10000;
+      fracVal = adc_sensor.value(ADC_SENSOR_VALUE) - intVal * 10000;
+      PRINTF("Temperature: %2d.%2d\r\n", intVal, fracVal);
+      snprintf(msg2, 5, "%2d.%2d", intVal, fracVal);
+      coap_set_payload(request, (uint8_t *)msg2, sizeof(msg2) - 1);
+      COAP_BLOCKING_REQUEST(&server_ip6addr, REMOTE_PORT, request, client_chunk_handler);
+      leds_off(LEDS_RED);
+      PRINTF("Done!!!\n\r");
+#endif
       etimer_reset(&et);
     }
   }
