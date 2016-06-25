@@ -32,7 +32,7 @@
 #include "contiki-net.h"
 #include "net/ip/uip.h"
 #include "net/rpl/rpl.h"
-
+#include "net/ipv6/sicslowpan.h"
 #include "net/netstack.h"
 #include "button-sensor.h" /*TODO: put all sensor files in hiveMote platform in /dev/ folder. */
 #include <stdio.h>
@@ -69,7 +69,8 @@ tcpip_handler(void)
     PRINTF("DATA recv '%s' from ", appdata);
     PRINTF("%d",
            UIP_IP_BUF->srcipaddr.u8[sizeof(UIP_IP_BUF->srcipaddr.u8) - 1]);
-    PRINTF("\n");
+    PRINTF("with RSSI: %d", sicslowpan_get_last_rssi());
+    PRINTF("\n\r");
 #if SERVER_REPLY
     PRINTF("DATA sending reply\n");
     uip_ipaddr_copy(&server_conn->ripaddr, &UIP_IP_BUF->srcipaddr);

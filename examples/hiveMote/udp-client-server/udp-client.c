@@ -33,6 +33,7 @@
 #include "net/ip/uip.h"
 #include "net/ipv6/uip-ds6.h"
 #include "net/ip/uip-udp-packet.h"
+#include "net/ipv6/sicslowpan.h"
 #include "sys/ctimer.h"
 #ifdef WITH_COMPOWER
 #include "powertrace.h"
@@ -54,9 +55,7 @@
 #define PERIOD 1
 #endif
 
-#define START_INTERVAL		(15 * CLOCK_SECOND)
 #define SEND_INTERVAL		(PERIOD * CLOCK_SECOND)
-#define SEND_TIME		(random_rand() % (SEND_INTERVAL))
 #define MAX_PAYLOAD_LEN		30
 
 static struct uip_udp_conn *client_conn;
@@ -75,11 +74,12 @@ tcpip_handler(void)
     str = uip_appdata;
     str[uip_datalen()] = '\0';
     printf("DATA recv '%s'\n", str);
+    PRINTF("with RSSI: %d", sicslowpan_get_last_rssi());
   }
 }
 /*---------------------------------------------------------------------------*/
 static void
-send_packet(void *ptr)
+send_packet()
 {
   static int seq_id;
   char buf[MAX_PAYLOAD_LEN];
@@ -150,7 +150,6 @@ set_global_address(void)
 PROCESS_THREAD(udp_client_process, ev, data)
 {
   static struct etimer periodic;
-  static struct ctimer backoff_timer;
 #if WITH_COMPOWER
   static int print = 0;
 #endif
@@ -191,8 +190,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
     
     if(etimer_expired(&periodic)) {
       etimer_reset(&periodic);
-      send_packet(NULL);
-      // ctimer_set(&backoff_timer, SEND_TIME, send_packet, NULL);
+      send_packet();
 
 #if WITH_COMPOWER
       if (print == 0) {
