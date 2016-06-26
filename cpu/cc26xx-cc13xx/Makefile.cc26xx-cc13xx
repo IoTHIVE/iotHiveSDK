@@ -87,6 +87,12 @@ BSL_FLAGS += -e -w -v
 
 ifdef PORT
   BSL_FLAGS += -p $(PORT)
+else
+  PORT = /dev/ttyUSB0
+endif
+
+ifndef BAUDRATE
+  BAUDRATE = 115200
 endif
 
 BSL = $(CONTIKI)/tools/cc2538-bsl/cc2538-bsl.py
@@ -141,7 +147,7 @@ ifeq ($(wildcard $(BSL)), )
 	@echo "ERROR: Could not find the cc2538-bsl script. Did you run 'git submodule update --init' ?"
 else
 	@sudo $(PYTHON) $(BSL) $(BSL_FLAGS) $<
-	@sudo putty -serial /dev/ttyUSB0 -sercfg 115200
+	@sudo putty -serial $(PORT) -sercfg $(BAUDRATE)
 endif
 else
 %.upload:
