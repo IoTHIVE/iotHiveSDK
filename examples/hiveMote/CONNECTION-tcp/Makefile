@@ -1,0 +1,30 @@
+all: tcp-client tcp-server
+
+CONTIKI=../../..
+
+### TARGET DECLARATION
+TARGET = hiveMote
+CPU_FAMILY = cc26xx
+# CPU_FAMILY = cc13xx
+
+SERVER_REPLY=1
+
+ifdef WITH_COMPOWER
+APPS+=powertrace
+CFLAGS+= -DCONTIKIMAC_CONF_COMPOWER=1 -DWITH_COMPOWER=1 -DQUEUEBUF_CONF_NUM=4
+endif
+
+ifdef SERVER_REPLY
+CFLAGS+=-DSERVER_REPLY=$(SERVER_REPLY)
+endif
+ifdef PERIOD
+CFLAGS+=-DPERIOD=$(PERIOD)
+endif
+
+CONTIKI_WITH_IPV6 = 1
+UIP_TCP = 1
+UIP_ACTIVE_OPEN = 1
+
+PROJECT_CONF_H=\"project-conf.h\"
+
+include $(CONTIKI)/Makefile.include
