@@ -45,14 +45,20 @@
 #include "ip64-addr.h"
 #include "dev/leds.h"
 
+#if HAS_BUTTON
+#include "button-sensor.h"
+#endif
 #ifdef  HAS_ADXL345
 #include "adxl345.h"
 #endif
 
-#ifdef  HAS_LM35
+#if (HAS_LM35 || HAS_LDR)
 #include "ti-lib.h"
 #include "adc-sensor.h"
 #define   ADC_FIXED_REF_VOLATGE   4300000 /* 4.3 V == 4300000 uV */
+#endif
+#ifdef HAS_MPU6050
+#include "mpu-6050-sensor.h"
 #endif
 /*---------------------------------------------------------------------------*/
 #define DEBUG 1
@@ -76,13 +82,18 @@ AUTOSTART_PROCESSES(&er_example_client);
 uip_ip4addr_t server_ip4addr;
 uip_ip6addr_t server_ip6addr;
 uint8_t flag = 0;
+#if HAS_BUTTON
+uint8_t toggle = 0;
+#endif
 /*---------------------------------------------------------------------------*/
-#define NUMBER_OF_URLS 3
+#define NUMBER_OF_URLS 5
 
 /* /token/deviceId/<SENS/ACT>/<sensorId/actuatorId> */
 char *service_urls[NUMBER_OF_URLS] = {  ".well-known/core", 
                                         "/c4daee07/200000/SENS/0", /* Accelerometer */
                                         "/c4daee07/200001/SENS/1", /* Temperature */
+                                        "/508cff8c/000000/SENS/3", /* Button */
+                                        "/508cff8c/000000/SENS/4", /* LDR */
                                       };
 /*---------------------------------------------------------------------------*/
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
@@ -125,13 +136,16 @@ PROCESS_THREAD(er_example_client, ev, data)
   SERVER_NODE(&server_ip4addr);
   ip64_addr_4to6(&server_ip4addr, &server_ip6addr);
 
+#if HAS_BUTTON
+  SENSORS_ACTIVATE(button_sensor);
+#endif
   coap_init_engine();
 
-#ifdef  HAS_ADXL345
+#if  (HAS_ADXL345 || HAS_MPU6050)
   accm_init();
 #endif
 
-#ifdef  HAS_LM35
+#if (HAS_LM35 || HAS_LDR)
   SENSORS_ACTIVATE(adc_sensor);
   adc_sensor.configure(ADC_SENSOR_SET_CHANNEL, ADC_COMPB_IN_AUXIO7);
 #endif
@@ -151,14 +165,34 @@ PROCESS_THREAD(er_example_client, ev, data)
     	PRINTF("Sending Accelerometer Data...\r\n");
       leds_on(LEDS_RED);
       coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-      coap_set_header_uri_path(request, "/c4daee07/200000/SENS/0");
+      coap_set_header_uri_path(request, service_urls[1]);
       coap_set_header_content_format(request, TEXT_PLAIN);
 
       char msg1[15];
       memset(msg1, 0, 15);
       int16_t x, y, z;
-      uint8_t xValStrLen,yValStrLen,zValStrLen;
-      char xValStr[4], yValStr[4], zValStr[4];
+      x = accm_read_axis(X_AXIS);
+      y = accm_read_axis(Y_AXIS);
+      z = accm_read_axis(Z_AXIS);
+      PRINTF("x:%d,y:%d,z:%d\n\r", x, y, z);
+
+      snprintf(msg1, 15, "%d,%d,%d:", x, y, z);
+      coap_set_payload(request, (uint8_t *)msg1, sizeof(msg1) - 1);
+      COAP_BLOCKING_REQUEST(&server_ip6addr, REMOTE_PORT, request, client_chunk_handler);
+      leds_off(LEDS_RED);
+      PRINTF("Done!!!\n\r");
+#endif
+
+#ifdef  HAS_MPU6050
+      PRINTF("Sending Accelerometer Data...\r\n");
+      leds_on(LEDS_RED);
+      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+      coap_set_header_uri_path(request, service_urls[1]);
+      coap_set_header_content_format(request, TEXT_PLAIN);
+
+      char msg1[15];
+      memset(msg1, 0, 15);
+      int16_t x, y, z;
       x = accm_read_axis(X_AXIS);
       y = accm_read_axis(Y_AXIS);
       z = accm_read_axis(Z_AXIS);
@@ -190,8 +224,41 @@ PROCESS_THREAD(er_example_client, ev, data)
       leds_off(LEDS_RED);
       PRINTF("Done!!!\n\r");
 #endif
+
+#ifdef  HAS_LDR
+      PRINTF("Sending LDR Data...\r\n");
+      leds_on(LEDS_RED);
+      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+      coap_set_header_uri_path(request, service_urls[4]);
+      coap_set_header_content_format(request, TEXT_PLAIN);
+      char dataLDR[4];
+      snprintf(dataLDR, 3, "%3d",
+        ti_lib_aux_adc_value_to_microvolts(ADC_FIXED_REF_VOLATGE, adc_sensor.value(ADC_SENSOR_VALUE)));
+      PRINTF("LDR: %s\r\n", dataLDR);
+      coap_set_payload(request, (uint8_t *)dataLDR, sizeof(dataLDR) - 1);
+      COAP_BLOCKING_REQUEST(&server_ip6addr, REMOTE_PORT, request, client_chunk_handler);
+      toggle = ~toggle & 0x01;
+      leds_off(LEDS_RED);
+      PRINTF("Done!!!\n\r");
+#endif
       etimer_reset(&et);
     }
+#ifdef  HAS_BUTTON
+    else if(ev == sensors_event && data == &button_sensor) {
+      PRINTF("Sending Button Toggle...\r\n");
+      leds_on(LEDS_RED);
+      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+      coap_set_header_uri_path(request, service_urls[3]);
+      coap_set_header_content_format(request, TEXT_PLAIN);
+      char msg3[4];
+      snprintf(msg3, 4, "1:%d", toggle);
+      coap_set_payload(request, (uint8_t *)msg3, sizeof(msg3) - 1);
+      COAP_BLOCKING_REQUEST(&server_ip6addr, REMOTE_PORT, request, client_chunk_handler);
+      toggle = ~toggle & 0x01;
+      leds_off(LEDS_RED);
+      PRINTF("Done!!!\n\r");
+    }
+#endif
   }
   PROCESS_END();
 }
