@@ -200,6 +200,21 @@
 /** @} */
 /*---------------------------------------------------------------------------*/
 /**
+ * \name ADXL345 SPI IOID mapping
+ *
+ * Those values are not meant to be modified by the user
+ * @{
+ */
+#ifdef 	ADXL345_SPI_INTERFACE
+#define ADXL345_SPI_INSTANCE 		1
+#define ADXL345_SPI_BASE 			SSI1_BASE
+#define ADXL345_IOID_CS    			MOD_DIO_10
+#define ADXL345_CS         			(1 << ADXL345_IOID_CS)
+
+#define ADXL345_BIT_RATE			4000000  /* 4 MHz */
+#endif /* ADXL345_SPI_INTERFACE */
+/*---------------------------------------------------------------------------*/
+/**
  * \name Arduino shield mappings
  * @{
  */
