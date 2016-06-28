@@ -32,26 +32,36 @@
 
 /**
  * \file
- *         Device drivers for adxl345 accelerometer in Zolertia Z1.
+ *         Device drivers for adxl345 accelerometer in HiveMote.
  * \author
  *         Marcus Lundén, SICS <mlunden@sics.se>
  *         Enric M. Calvo, Zolertia <ecalvo@zolertia.com>
  */
-#include <stdio.h>
 #include "contiki.h"
 #include "adxl345.h"
+#ifdef  ADXL345_SPI_INTERFACE /* Using SPI interface */
+#include "board-spi.h"
+#else
+#include "board-i2c.h"
+#endif
 /*---------------------------------------------------------------------------*/
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
+#include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
 #else
 #define PRINTF(...)
 #endif
 /*---------------------------------------------------------------------------*/
-/* Sensor selection/deselection */ // BHAUMIK added this
+/* ADXL345 Interface Selection */
+#ifdef  ADXL345_SPI_INTERFACE /* Using SPI interface */
+#define SENSOR_SELECT()     ti_lib_gpio_pin_write(ADXL345_CS, 0)
+#define SENSOR_DESELECT()   ti_lib_gpio_pin_write(ADXL345_CS, 1)
+#else /* Using I2C interface */
 #define SENSOR_I2C_ADDRESS  ADXL345_ADDR
 #define SENSOR_SELECT()     board_i2c_select(BOARD_I2C_INTERFACE_0, SENSOR_I2C_ADDRESS)
 #define SENSOR_DESELECT()   board_i2c_deselect()
+#endif /* ADXL345_SPI_INTERFACE */
 /* -------------------------------------------------------------------------- */
 /* Callback pointers when interrupt occurs */
 // void (*accm_int1_cb)(uint8_t reg);
@@ -80,7 +90,7 @@ enum ADXL345_STATUSTYPES {
     CCC = 0x40,   // available to extend this...
     DDD = 0x80,   // available to extend this...
 };
-static enum ADXL345_STATUSTYPES _ADXL345_STATUS = 0x00;
+// static enum ADXL345_STATUSTYPES _ADXL345_STATUS = 0x00;
 
 /* Default values for adxl345 at startup. This will be sent to the adxl345 in a
     stream at init to set it up in a default state */
@@ -126,12 +136,17 @@ static uint8_t adxl345_default_settings[] = {
 
 void
 accm_write_reg(uint8_t reg, uint8_t val) {
-  
-  SENSOR_SELECT();
-  sensor_common_write_reg(reg, &val, 1);
-  SENSOR_DESELECT();
 
-  PRINTF("WRITE_REG 0x%02X @ reg 0x%02X\n", val, reg);
+  uint8_t buffer[2] = {reg,val};
+  SENSOR_SELECT();
+#ifdef ADXL345_SPI_INTERFACE
+  board_spi_write(ADXL345_SPI_INSTANCE, buffer, 2);
+  board_spi_flush(ADXL345_SPI_INSTANCE);
+#else
+  board_i2c_write(buffer, 2);
+#endif
+  SENSOR_DESELECT();
+  PRINTF("WRITE_REG 0x%02X @ reg 0x%02X\n\r", val, reg);
 }
 /*---------------------------------------------------------------------------*/
 /* Write several registers from a stream.
@@ -144,12 +159,17 @@ accm_write_reg(uint8_t reg, uint8_t val) {
 
 void
 accm_write_stream(uint8_t len, uint8_t *data) {
-  
-  SENSOR_SELECT();
-  board_i2c_write(data, len);	// start tx and send conf reg 
-  SENSOR_DESELECT();
 
-  PRINTF("WRITE_STR %u B to 0x%02X\n", len, data[0]);
+  SENSOR_SELECT();
+#ifdef ADXL345_SPI_INTERFACE
+  *data |= 0x40;
+  board_spi_write(ADXL345_SPI_INSTANCE, data, len);
+  board_spi_flush(ADXL345_SPI_INSTANCE);
+#else
+  board_i2c_write(data, len);
+#endif
+  SENSOR_DESELECT();
+  PRINTF("WRITE_STR %u B to 0x%02X\n\r", len, data[0]);
 }
 /*---------------------------------------------------------------------------*/
 /* Read one register.
@@ -162,13 +182,16 @@ uint8_t
 accm_read_reg(uint8_t reg) {
 
   uint8_t retVal = 0;
-
-  PRINTF("READ_REG 0x%02X\n", reg);
-
+  PRINTF("READ_REG 0x%02X\n\r", reg);
   SENSOR_SELECT();
-  sensor_common_read_reg(reg, &retVal, 1);
+#ifdef ADXL345_SPI_INTERFACE
+  uint8_t tempReg = (0x80|reg);
+  board_spi_write(ADXL345_SPI_INSTANCE, (const uint8_t*)&tempReg, 1);
+  board_spi_read(ADXL345_SPI_INSTANCE, &retVal, 1);
+#else
+  board_i2c_write_read(&reg, 1, &retVal, 1);
+#endif
   SENSOR_DESELECT();
-
   return retVal;
 }
 /*---------------------------------------------------------------------------*/
@@ -183,7 +206,13 @@ void
 accm_read_stream(uint8_t reg, uint8_t len, uint8_t *whereto) {
 
   SENSOR_SELECT();
+#ifdef ADXL345_SPI_INTERFACE
+  uint8_t tempReg = (0xC0|reg);
+  board_spi_write(ADXL345_SPI_INSTANCE, (const uint8_t*)&tempReg, 1);
+  board_spi_read(ADXL345_SPI_INSTANCE, whereto, len);
+#else
   board_i2c_write_read(&reg, 1, whereto, len);
+#endif
   SENSOR_DESELECT();
 }
 /*---------------------------------------------------------------------------*/
@@ -200,7 +229,7 @@ accm_read_axis(enum ADXL345_AXIS axis){
     return 0;
   }
   accm_read_stream(ADXL345_DATAX0 + axis, 2, &tmp[0]);
-  rd = (int16_t)(tmp[0] | (tmp[1]<<8));  
+  rd = (int16_t)(tmp[0] | (tmp[1]<<8));
   return rd;
 }
 /*---------------------------------------------------------------------------*/
@@ -237,11 +266,15 @@ accm_set_grange(uint8_t grange){
 void
 accm_init(void) {
   
-  if(!(_ADXL345_STATUS & INITED)) {
+#ifdef ADXL345_SPI_INTERFACE
+    board_spi_open(ADXL345_SPI_INSTANCE, ADXL345_BIT_RATE, SSI_FRF_MOTO_MODE_3); /* Set up SPI */
+    ti_lib_ioc_pin_type_gpio_output(ADXL345_IOID_CS);       /* SPI CS Config */
+    SENSOR_DESELECT();                                      /* Deselect CS */
+    board_spi_flush(ADXL345_SPI_INSTANCE);                  /* Clear RX Fifo */
+#endif
 
-    PRINTF("ADXL345 init\n");
+    PRINTF("Initializing ADXL345\n\r");
     
-    _ADXL345_STATUS |= INITED;
     // accm_int1_cb = NULL;
     // accm_int2_cb = NULL;
     // int1_event = process_alloc_event();
@@ -254,13 +287,17 @@ accm_init(void) {
 
     if(accm_read_reg(ADXL345_DEVID) != 0xE5)
     {
-      printf("ERROR: DEVICE ID could not be verified.\r\n");
+      PRINTF("ERROR: DEVICE ID COULD NOT BE VERIFIED!!!\r\n");
+      return;
     }
-    /* set default register values. */
-    accm_write_stream(15, &adxl345_default_settings[0]);
-    accm_write_stream(5, &adxl345_default_settings[15]);
-    accm_write_reg(ADXL345_DATA_FORMAT, adxl345_default_settings[20]);
-    accm_write_reg(ADXL345_FIFO_CTL, adxl345_default_settings[21]);
+    else
+    {
+      /* set default register values. */
+      accm_write_stream(15, &adxl345_default_settings[0]);
+      accm_write_stream(5, &adxl345_default_settings[15]);
+      accm_write_reg(ADXL345_DATA_FORMAT, adxl345_default_settings[20]);
+      accm_write_reg(ADXL345_FIFO_CTL, adxl345_default_settings[21]);
+    }
 
     // process_start(&accmeter_process, NULL);
 
@@ -269,13 +306,12 @@ accm_init(void) {
     // ADXL345_IES &=~ (ADXL345_INT1_PIN | ADXL345_INT2_PIN);   // low to high transition interrupts
     // ADXL345_IE |= (ADXL345_INT1_PIN | ADXL345_INT2_PIN);     // enable interrupts
     // eint();
-  }
+  // }
 }
-
+#if 0
 /*---------------------------------------------------------------------------*/
 /* Map interrupt (FF, tap, dbltap etc) to interrupt pin (IRQ_INT1, IRQ_INT2).
     This must come after accm_init() as the registers will otherwise be overwritten. */
-#if 0
 void
 accm_set_irq(uint8_t int1, uint8_t int2){
   /* Set the corresponding interrupt mapping to INT1 or INT2 */
@@ -313,13 +349,11 @@ backoff_passed(clocktime_t happenedAt, const clocktime_t backoff){
     return (timenow-lasttime);
   }
 }
-#endif
 /*---------------------------------------------------------------------------*/
 /* Invoked after an interrupt happened. Reads the interrupt source reg at the
   accelerometer, which resets the interrupts, and invokes the corresponding
   callback. It passes the source register value so the callback can determine
   what interrupt happened, if several interrupts are mapped to the same pin. */
-#if 0
 static void
 poll_handler(void){
   uint8_t ireg = 0;
