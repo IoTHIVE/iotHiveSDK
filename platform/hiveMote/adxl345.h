@@ -41,7 +41,8 @@
 #ifndef ADXL345_H_
 #define ADXL345_H_
 /*--------------------------------------------------------------------------*/
-#include "sensor-common.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 /* Used in accm_read_axis(), eg accm_read_axis(X_AXIS);*/
 enum ADXL345_AXIS {
