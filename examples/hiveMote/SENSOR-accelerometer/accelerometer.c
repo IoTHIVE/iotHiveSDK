@@ -5,7 +5,11 @@
 #define _ACCELEROMETER_SENSOR_APP_C_
 
 #include "contiki.h"
+#if HAS_ADXL345==1
 #include "adxl345.h"
+#elif HAS_MPU6050==1
+#include "mpu-6050-sensor.h"
+#endif
 /*---------------------------------------------------------------------------*/
 #define DEBUG 1
 #if DEBUG
