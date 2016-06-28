@@ -23,6 +23,10 @@ CONTIKI_TARGET_SOURCEFILES += leds-arch.c srf06-sensors.c button-sensor.c board.
 CONTIKI_TARGET_SOURCEFILES += board-i2c.c sensor-common.c sd-card.c
 CONTIKI_TARGET_SOURCEFILES += board-spi.c
 
+ifeq ($(WITH_MPU6050),1)
+CONTIKI_TARGET_SOURCEFILES += mpu-6050-sensor.c
+endif
+
 ifeq ($(WITH_ADXL345),1)
 CONTIKI_TARGET_SOURCEFILES += adxl345.c
 endif
