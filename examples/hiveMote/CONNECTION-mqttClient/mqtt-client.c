@@ -75,7 +75,8 @@
  */
 // static char *broker_ip = "0064:ff9b:0000:0000:0000:0000:b8ac:7cbd";
 // static char *broker_ip = "0000:0000:0000:0000:0000:ffff:c0a8:106"; /* 192.168.1.6 */
-static char *broker_ip = "0000:0000:0000:0000:0000:ffff:341d:c1d8"; /* broker.hivemq.com (52.29.193.216) */
+// static char *broker_ip = "0000:0000:0000:0000:0000:ffff:341d:c1d8"; /* broker.hivemq.com (52.29.193.216) */
+static char *broker_ip = "0000:0000:0000:0000:0000:ffff:bca6:dbb2"; /* iothive cloud (188.166.219.178) */
 
 /*---------------------------------------------------------------------------*/
 /*
@@ -132,7 +133,7 @@ static uint8_t state;
 #define BUFFER_SIZE 64
 static char client_id[] = "123456789";
 static char pub_topic[] = "/hello/1";
-static char sub_topic[] = "/bhaumik/iotHive/test/#";
+static char sub_topic[] = "/508cff8c/000000/ACT/3";
 /*---------------------------------------------------------------------------*/
 /*
  * The main MQTT buffers.
