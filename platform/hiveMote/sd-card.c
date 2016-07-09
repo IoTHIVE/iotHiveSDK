@@ -80,8 +80,6 @@
 
 #define SDCARD_SPI_BEGIN()      ti_lib_gpio_pin_write(BOARD_SDCARD_CS, 0)
 #define SDCARD_SPI_END()        ti_lib_gpio_pin_write(BOARD_SDCARD_CS, 1)
-#define IS_SDCARD_PRESENT()     ti_lib_gpio_pin_read(BOARD_SDCARD_CD)
-
 /******************************************************************************
 * VARIABLES AND LOCAL FUNCTIONS
 */
@@ -151,16 +149,8 @@ sdCardInit(void)
     /* Deselect CS */
     SDCARD_SPI_END();
       
-    /* Card Detect input */
-    ti_lib_ioc_pin_type_gpio_input(BOARD_IOID_SDCARD_CD);
-
     /* Set up SPI */
     board_spi_open(SDCARD_SPI_INSTANCE, SDCARD_SPI_INIT_FREQ, SSI_FRF_MOTO_MODE_0);
-
-    if(IS_SDCARD_PRESENT())
-    {
-        PRINTF("SD CD HIGH!!! No card present\r\n");
-    }
 
     // Enter SPI mode
     //

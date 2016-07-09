@@ -172,8 +172,6 @@
 
 #define BOARD_IOID_SDCARD_CS      	IOID_12
 #define BOARD_SDCARD_CS           	(1 << BOARD_IOID_SDCARD_CS)
-#define BOARD_IOID_SDCARD_CD      	IOID_13
-#define BOARD_SDCARD_CD           	(1 << BOARD_IOID_SDCARD_CD)
 /** @} */
 /*---------------------------------------------------------------------------*/
 /**
