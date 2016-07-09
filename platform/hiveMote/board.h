@@ -44,7 +44,7 @@
  *
  * \file
  * Header file with definitions related to the I/O connections on the
- * IoTHive hiveMote board version 1.3
+ * IoTHive hiveMote board version 1.2
  *
  * \note   Do not include this file directly. It gets included by contiki-conf
  *         after all relevant directives have been set.

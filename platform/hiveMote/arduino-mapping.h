@@ -1,6 +1,8 @@
-
-
-
+/*
+ * Description: Arduino Shield Mapping for HiveMote.
+ * Version Supported: HiveMote 1.2
+ *
+*/
 
 #ifndef __ARDUINO_MAPPING_H__
 #define __ARDUINO_MAPPING_H__
@@ -17,11 +19,11 @@
 #else
 #define MOD_DIO_5		IOID_22
 #endif /* cc26xx==1 */
-#define MOD_DIO_6		IOID_29
-#define MOD_DIO_7		IOID_30
+#define MOD_DIO_6		IOID_27
+#define MOD_DIO_7		IOID_28
 #define MOD_DIO_8		IOID_13
 #if SEEED_MOTOR_BOARD_V2==1
-#define MOD_DIO_9		IOID_29 	/* H/W muxed with MOD_DIO_6 */
+#define MOD_DIO_9		IOID_27 	/* H/W muxed with MOD_DIO_6 */
 #else
 #define MOD_DIO_9		IOID_UNUSED
 #endif /* SEEED_MOTOR_BOARD_V2==1 */
@@ -36,7 +38,7 @@
 #define MOD_AIO_1		IOID_24
 #define MOD_AIO_2		IOID_25
 #define MOD_AIO_3		IOID_26
-#define MOD_AIO_4		IOID_27
-#define MOD_AIO_5		IOID_28
+#define MOD_AIO_4		IOID_29
+#define MOD_AIO_5		IOID_30
 
 #endif /* __ARDUINO_MAPPING_H__ */
