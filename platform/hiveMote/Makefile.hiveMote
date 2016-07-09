@@ -20,7 +20,7 @@ endif
 CONTIKI_TARGET_SOURCEFILES += contiki-main.c
 CONTIKI_TARGET_SOURCEFILES += sensors.c leds.c
 CONTIKI_TARGET_SOURCEFILES += leds-arch.c srf06-sensors.c button-sensor.c board.c
-CONTIKI_TARGET_SOURCEFILES += board-i2c.c sensor-common.c sd-card.c
+CONTIKI_TARGET_SOURCEFILES += board-i2c.c sd-card.c
 CONTIKI_TARGET_SOURCEFILES += board-spi.c
 
 ifeq ($(WITH_MPU6050),1)
