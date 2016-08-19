@@ -237,7 +237,6 @@ PROCESS_THREAD(er_example_client, ev, data)
       PRINTF("LDR: %s\r\n", dataLDR);
       coap_set_payload(request, (uint8_t *)dataLDR, sizeof(dataLDR) - 1);
       COAP_BLOCKING_REQUEST(&server_ip6addr, REMOTE_PORT, request, client_chunk_handler);
-      toggle = ~toggle & 0x01;
       leds_off(LEDS_RED);
       PRINTF("Done!!!\n\r");
 #endif
