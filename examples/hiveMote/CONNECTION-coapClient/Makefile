@@ -56,8 +56,6 @@ ifneq ($(LIGHT_SENSOR_USED),)
 	CFLAGS += -DHAS_$(LIGHT_SENSOR_USED)=1
 endif
 
-endif
-
 ifeq ($(WITH_BUTTON),1)
 	CFLAGS += -DHAS_BUTTON=1
 endif
